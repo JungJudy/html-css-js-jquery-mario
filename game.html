@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">  
+    <title>마리오 게임</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+    
+      
+      
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #container {
+            position: absolute;
+            width: 100%; 
+            height: 500px;
+            border: 1px solid black;
+        }
+
+        #mario {
+            position: absolute;
+            width: 100px;
+            bottom: 0px;
+            left: 50px;
+        }
+
+        #enemy {
+            position: absolute;
+            width: 70px;
+            bottom: 0px;
+            right: 50px;
+        }
+
+        #background {
+            position: absolute;
+            background: url("asset/bg.jpg") repeat-x;
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-position: 0 center;
+            animation-name: bg-slide;
+            animation-duration: 6s;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+
+        @keyframes bg-slide {
+           from {background-position: 0 center;}
+           to {background-position: -500px center;}
+           
+            /* from {
+                left: 0px;
+            }
+
+            to {
+                left: -100%;
+            } */
+        }
+
+        #score {
+            font-family: 'Do Hyeon', sans-serif;
+            position: absolute;
+            left: 1%;
+            top: 2%;
+            font-size: 30px;
+            color: crimson;
+            z-index: 1;
+        }
+
+        #attack {
+            position: absolute;
+            width: 100px;
+            bottom: 0px;
+            left: 50px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="score"></div>
+        <div id="background"></div>
+        <img id="mario" src="asset/supermario.gif" alt="">
+        <img id="enemy" src="asset/버섯.gif" alt="">
+        <img id="attack" src="asset/attack.png" alt="">
+        
+    </div>
+  
+    <script>
+        
+        let isJumping = false;
+        let mario = $('#mario');
+        let enemy = $('#enemy');
+        let attack = $('#attack');
+        let score = 0;
+
+
+        //주인공 점프
+        function jump() {
+            isJumping = true;
+            mario.animate({
+                bottom: "+=180px"
+            }).animate({
+                bottom: "-=180px"
+            },function () {
+                isJumping = false;
+            });
+        }
+
+        let isAnimating = false;
+        //앞뒤 움직이기
+        function updatePosition(target, options) {
+            if (isAnimating == false) {
+                isAnimating = true;
+                target.animate(options, function () {
+                    isAnimating = false;
+                });
+            }
+
+        }
+        //공격하기
+        let isAttack = false;
+        function attackMove() {
+            isAttack = true;
+            attack.show();
+            attack.animate({
+                left: "100%"
+            },2000, function () {
+                attack.css("left","5%");
+                attack.hide();
+                isAttack = false;
+            });
+
+        }
+
+        //버섯 움직이기
+        function enemyMove() {
+            $('#enemy').animate({
+                right: "120%"
+            },(Math.random() * 2000)+2000, function () {
+                $('#enemy').css("right","-120px");
+                score = score + 100;
+                $("#score").html("점수: "+ score);
+            });
+
+        }
+
+        function deadCheck() {
+            let isDead = false;
+           
+
+            let marioRightX = parseInt(mario.css("left")) + parseInt(mario.css("width"));  
+            let enemyRightX = parseInt(enemy.css("right"));
+           
+            let marioLeftX = parseInt(mario.css("left"));
+            let enemyLeftX = parseInt(enemy.css("left"));
+
+            let marioBottomY = parseInt(mario.css("bottom"));
+            let enemyheightY = parseInt(enemy.css("height"));
+            
+            if (enemyLeftX < (marioRightX-25) && marioBottomY < enemyheightY && enemyLeftX > 0) {
+                isDead = true;
+            }
+
+            return isDead;
+        }
+
+        function crashCheck() {
+            let isCrash = false;
+           
+            let attackRightX = parseInt(attack.css("left")) + parseInt(attack.css("width"));  
+
+            let enemyLeftX = parseInt(enemy.css("left"));
+            
+            if (attackRightX > enemyLeftX && attack.css("display") != "none") {
+                isCrash = true;
+            }
+
+            return isCrash;
+        }
+
+
+        //스페이스바 누르면 점프
+        $("body").keydown(function (event) {
+            switch (event.code) {
+                case "Space":
+                    //스페이스 연타 방지
+                    if(isJumping == false) {
+                        jump();
+                    }
+                    break;
+                case "ArrowLeft" : 
+                    updatePosition(mario, {
+                        left: "-=100px"
+                    });
+                    break;
+                case "ArrowRight" : 
+                    updatePosition(mario, {
+                        left: "+=100px"
+                    });
+                    break;
+                case "ArrowDown" : 
+                    attackMove();
+                    break;
+            }
+        });
+
+
+        //대락 30frame 화면 갱신
+        let interval1 = function () {
+            //적 이동
+            enemyMove();
+
+            //죽었는지 체크
+            if (deadCheck()) {
+                alert("마리오 死亡. 다시 시작 됩니다.");
+                score = 0;
+                clearInterval(interval1);
+                window.location.reload();
+            }
+            
+            if (crashCheck()) {
+                enemy.fadeOut();
+                score += 100;
+                enemy.stop(false,true);
+                attack.stop(false,true);
+            }
+   
+        }
+
+        setInterval(interval1, 1);
+        
+        
+
+    </script>
+</body>
+</html>
